@@ -1,0 +1,654 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คำนวณค่าดัชนีลูกน้ำยุงลาย</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;700&family=Sarabun:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+    h1, h2, h3 {
+      font-family: 'Kanit', sans-serif;
+    }
+    .card-low { background-color: #dcfce7; border-color: #22c55e; }
+    .card-medium { background-color: #fef3c7; border-color: #f59e0b; }
+    .card-high { background-color: #fee2e2; border-color: #ef4444; }
+    
+    /* เพิ่ม transition และ animation สำหรับการแสดงผลที่สมูทขึ้น */
+    #results-container > div {
+      transition: all 0.5s ease-in-out;
+      transform-origin: center;
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    #hi-value, #ci-value, #bi-value, #hi-risk, #ci-risk, #bi-risk {
+      transition: all 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .result-appear {
+      animation: fadeIn 0.5s ease-out, pulse 0.5s ease-in-out 0.5s;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4">
+  <!-- Header -->
+  <div class="max-w-6xl mx-auto mb-6">
+    <div class="bg-white rounded-xl shadow-lg p-6 text-center border-2 border-green-200">
+      <h1 class="text-3xl md:text-4xl font-bold text-green-700 mb-2">ระบบคำนวณดัชนีลูกน้ำยุงลาย</h1>
+      <p class="text-lg text-green-600">
+คำนวณค่า House Index (HI), Container Index (CI), และ Breteau Index (BI) เพื่อประเมินความเสี่ยงการแพร่ระบาดของโรคจากยุงลาย <br>รพ.สต.บ้านบุ่งเลิศ อ.เมยวดี จ.ร้อยเอ็ด</p>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- ฝั่งซ้าย: กรอกข้อมูล -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-green-100">
+      <h2 class="text-2xl font-bold text-center bg-green-500 text-white p-3 rounded-lg mb-6">กรอกข้อมูลสำหรับการคำนวณ</h2>
+
+      <!-- ข้อมูลบ้าน -->
+      <div class="bg-green-50 rounded-lg p-4 mb-6 border border-green-200">
+        <h3 class="text-xl font-bold mb-4 text-green-700">ข้อมูลบ้าน (สำหรับคำนวณ HI และ BI)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="house_with_larvae" class="block mb-2 font-medium text-green-800">จำนวนบ้านที่พบลูกน้ำ</label>
+            <input type="number" id="house_with_larvae" class="border-2 border-green-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:shadow-md focus:shadow-lg" min="0" required>
+          </div>
+          <div>
+            <label for="total_houses_surveyed" class="block mb-2 font-medium text-green-800">จำนวนบ้านที่สำรวจ</label>
+            <input type="number" id="total_houses_surveyed" class="border-2 border-green-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:shadow-md focus:shadow-lg" min="0" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- ข้อมูลภาชนะ -->
+      <div class="bg-green-50 rounded-lg p-4 mb-6 border border-green-200">
+        <h3 class="text-xl font-bold mb-4 text-green-700">ข้อมูลภาชนะ (สำหรับคำนวณ CI และ BI)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="containers_with_larvae" class="block mb-2 font-medium text-green-800">จำนวนภาชนะที่พบลูกน้ำ</label>
+            <input type="number" id="containers_with_larvae" class="border-2 border-green-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:shadow-md focus:shadow-lg" min="0" required>
+          </div>
+          <div>
+            <label for="total_containers_surveyed" class="block mb-2 font-medium text-green-800">จำนวนภาชนะที่สำรวจ</label>
+            <input type="number" id="total_containers_surveyed" class="border-2 border-green-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:shadow-md focus:shadow-lg" min="0" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- ปุ่มคำนวณและรีเซ็ต -->
+      <div class="flex flex-col sm:flex-row justify-between gap-4 mt-6">
+        <button id="calculateButton" class="bg-green-500 hover:bg-green-600 active:bg-green-700 active:scale-95 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center transform hover:shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <span class="relative">คำนวณดัชนี</span>
+        </button>
+        <button id="resetButton" class="bg-gray-300 hover:bg-gray-400 active:bg-gray-500 active:scale-95 text-gray-800 font-bold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center transform hover:shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transition-transform duration-300 hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="relative">ล้างข้อมูล</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ฝั่งขวา: แสดงผลลัพธ์ -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-green-100">
+      <h2 class="text-2xl font-bold text-center bg-green-500 text-white p-3 rounded-lg mb-6">ผลการคำนวณดัชนี</h2>
+
+      <!-- ผลลัพธ์ HI, CI, BI (เริ่มต้นซ่อน) -->
+      <div class="space-y-4 mb-8 hidden" id="results-container">
+        <div id="hi-result" class="bg-gray-100 border-l-4 border-gray-500 rounded-lg p-4 flex items-start justify-between">
+          <div class="flex items-start">
+            <div class="mr-3 mt-1" id="hi-icon">
+              <!-- Default icon, will be replaced by JS -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-800">House Index (HI)</h3>
+              <p class="text-sm text-gray-600">ร้อยละของบ้านที่พบลูกน้ำยุงลาย</p>
+            </div>
+          </div>
+          <div class="flex flex-col items-end">
+            <span id="hi-value" class="text-lg font-bold text-gray-800">-</span>
+            <span id="hi-risk" class="text-sm font-medium"></span>
+          </div>
+        </div>
+        
+        <div id="ci-result" class="bg-gray-100 border-l-4 border-gray-500 rounded-lg p-4 flex items-start justify-between">
+          <div class="flex items-start">
+            <div class="mr-3 mt-1" id="ci-icon">
+              <!-- Default icon, will be replaced by JS -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-800">Container Index (CI)</h3>
+              <p class="text-sm text-gray-600">ร้อยละของภาชนะที่พบลูกน้ำยุงลาย</p>
+            </div>
+          </div>
+          <div class="flex flex-col items-end">
+            <span id="ci-value" class="text-lg font-bold text-gray-800">-</span>
+            <span id="ci-risk" class="text-sm font-medium"></span>
+          </div>
+        </div>
+        
+        <div id="bi-result" class="bg-gray-100 border-l-4 border-gray-500 rounded-lg p-4 flex items-start justify-between">
+          <div class="flex items-start">
+            <div class="mr-3 mt-1" id="bi-icon">
+              <!-- Default icon, will be replaced by JS -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-800">Breteau Index (BI)</h3>
+              <p class="text-sm text-gray-600">จำนวนภาชนะที่พบลูกน้ำต่อ 100 บ้าน</p>
+            </div>
+          </div>
+          <div class="flex flex-col items-end">
+            <span id="bi-value" class="text-lg font-bold text-gray-800">-</span>
+            <span id="bi-risk" class="text-sm font-medium"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ข้อความแสดงเมื่อยังไม่ได้คำนวณ -->
+      <div id="no-results-message" class="text-center py-8 text-gray-500 transition-all duration-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-400 transition-transform duration-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="text-lg transition-all duration-500">กรุณากดปุ่ม "คำนวณดัชนี" เพื่อดูผลลัพธ์</p>
+      </div>
+
+      <!-- เกณฑ์การประเมินความเสี่ยง -->
+      <div class="bg-green-50 rounded-xl p-6 border border-green-200">
+        <h2 class="text-2xl font-bold text-center text-green-700 mb-6">เกณฑ์การประเมินความเสี่ยง</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- HI & CI -->
+          <div>
+            <h3 class="text-xl font-bold mb-4 text-green-700 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              HI & CI
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center p-3 bg-green-100 rounded-lg border-l-4 border-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="font-medium text-green-800">&lt; 5%: ระดับปลอดภัย</span>
+              </div>
+              <div class="flex items-center p-3 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span class="font-medium text-yellow-800">5-10%: ระดับเสี่ยง</span>
+              </div>
+              <div class="flex items-center p-3 bg-red-100 rounded-lg border-l-4 border-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span class="font-medium text-red-800">&gt; 10%: ระดับอันตราย</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- BI -->
+          <div>
+            <h3 class="text-xl font-bold mb-4 text-green-700 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              BI
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center p-3 bg-green-100 rounded-lg border-l-4 border-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="font-medium text-green-800">&lt; 5: ระดับปลอดภัย</span>
+              </div>
+              <div class="flex items-center p-3 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span class="font-medium text-yellow-800">5-50: ระดับเสี่ยง</span>
+              </div>
+              <div class="flex items-center p-3 bg-red-100 rounded-lg border-l-4 border-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span class="font-medium text-red-800">&gt; 50: ระดับอันตราย</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 w-full max-w-xs">
+    <!-- Toast messages will be appended here -->
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // ฟังก์ชันตรวจสอบค่าเป็นเลขจำนวนเต็มบวก
+    function validateInput(input) {
+      const value = parseInt(input.value);
+      if (isNaN(value) || value <= 0) {
+        input.classList.add('border-red-500');
+        return false;
+      } else {
+        input.classList.remove('border-red-500');
+        return true;
+      }
+    }
+    
+    // เพิ่ม event listener เพื่อล้างคลาส border-red-500 เมื่อผู้ใช้แก้ไขข้อมูล
+    document.getElementById('house_with_larvae').addEventListener('input', function() {
+      this.classList.remove('border-red-500');
+    });
+    
+    document.getElementById('total_houses_surveyed').addEventListener('input', function() {
+      this.classList.remove('border-red-500');
+    });
+    
+    document.getElementById('containers_with_larvae').addEventListener('input', function() {
+      this.classList.remove('border-red-500');
+    });
+    
+    document.getElementById('total_containers_surveyed').addEventListener('input', function() {
+      this.classList.remove('border-red-500');
+    });
+
+    // ฟังก์ชันกำหนดสีและข้อความตามระดับความเสี่ยง
+    function getRiskInfo(value, type) {
+      if (type === 'bi') {
+        if (value < 5) return { 
+          class: 'card-low', 
+          text: 'ระดับปลอดภัย', 
+          iconClass: 'text-green-600',
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>`
+        };
+        if (value <= 50) return { 
+          class: 'card-medium', 
+          text: 'ระดับเสี่ยง', 
+          iconClass: 'text-yellow-600',
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>`
+        };
+        return { 
+          class: 'card-high', 
+          text: 'ระดับอันตราย', 
+          iconClass: 'text-red-600',
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>`
+        };
+      } else {
+        if (value < 5) return { 
+          class: 'card-low', 
+          text: 'ระดับปลอดภัย', 
+          iconClass: 'text-green-600',
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>`
+        };
+        if (value <= 10) return { 
+          class: 'card-medium', 
+          text: 'ระดับเสี่ยง', 
+          iconClass: 'text-yellow-600',
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>`
+        };
+        return { 
+          class: 'card-high', 
+          text: 'ระดับอันตราย', 
+          iconClass: 'text-red-600',
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>`
+        };
+      }
+    }
+
+    // ฟังก์ชันคำนวณค่าดัชนี
+    function calculateIndices() {
+      const houseWithLarvae = parseFloat(document.getElementById('house_with_larvae').value);
+      const totalHousesSurveyed = parseFloat(document.getElementById('total_houses_surveyed').value);
+      const containersWithLarvae = parseFloat(document.getElementById('containers_with_larvae').value);
+      const totalContainersSurveyed = parseFloat(document.getElementById('total_containers_surveyed').value);
+
+      // ตรวจสอบค่า
+      if (
+        !validateInput(document.getElementById('house_with_larvae')) ||
+        !validateInput(document.getElementById('total_houses_surveyed')) ||
+        !validateInput(document.getElementById('containers_with_larvae')) ||
+        !validateInput(document.getElementById('total_containers_surveyed'))
+      ) {
+        showToast('กรุณากรอกข้อมูลให้ถูกต้อง', 'error');
+        return;
+      }
+
+      // ตรวจสอบการหารด้วยศูนย์
+      if (totalHousesSurveyed === 0 || totalContainersSurveyed === 0) {
+        showToast('จำนวนบ้านหรือภาชนะที่สำรวจต้องมากกว่า 0', 'error');
+        return;
+      }
+      
+      // ตรวจสอบว่าจำนวนบ้านที่พบลูกน้ำไม่เกินจำนวนบ้านที่สำรวจ
+      if (houseWithLarvae > totalHousesSurveyed) {
+        showToast('จำนวนบ้านที่พบลูกน้ำต้องไม่เกินจำนวนบ้านที่สำรวจ', 'error');
+        document.getElementById('house_with_larvae').classList.add('border-red-500');
+        return;
+      }
+      
+      // ตรวจสอบว่าจำนวนภาชนะที่พบลูกน้ำไม่เกินจำนวนภาชนะที่สำรวจ
+      if (containersWithLarvae > totalContainersSurveyed) {
+        showToast('จำนวนภาชนะที่พบลูกน้ำต้องไม่เกินจำนวนภาชนะที่สำรวจ', 'error');
+        document.getElementById('containers_with_larvae').classList.add('border-red-500');
+        return;
+      }
+
+      // คำนวณค่าดัชนี
+      const hi = ((houseWithLarvae / totalHousesSurveyed) * 100);
+      const ci = ((containersWithLarvae / totalContainersSurveyed) * 100);
+      const bi = ((containersWithLarvae / totalHousesSurveyed) * 100);
+
+      // แสดงผลลัพธ์และซ่อนข้อความเริ่มต้น
+      document.getElementById('results-container').classList.remove('hidden');
+      document.getElementById('no-results-message').classList.add('hidden');
+      
+      // เตรียมค่าที่จะแสดงผล
+      const hiValue = hi.toFixed(2);
+      const ciValue = ci.toFixed(2);
+      const biValue = bi.toFixed(2);
+      
+      // กำหนดข้อความระดับความเสี่ยง
+      const hiRiskInfo = getRiskInfo(hi, 'hi');
+      const ciRiskInfo = getRiskInfo(ci, 'ci');
+      const biRiskInfo = getRiskInfo(bi, 'bi');
+      
+      // อัปเดตสีและไอคอนตามระดับความเสี่ยง
+      const hiResult = document.getElementById('hi-result');
+      const ciResult = document.getElementById('ci-result');
+      const biResult = document.getElementById('bi-result');
+      
+      // ลบคลาสเดิมและเพิ่มคลาสใหม่พร้อมเอฟเฟกต์
+      hiResult.className = `rounded-lg p-4 flex items-start justify-between border-l-4`;
+      ciResult.className = `rounded-lg p-4 flex items-start justify-between border-l-4`;
+      biResult.className = `rounded-lg p-4 flex items-start justify-between border-l-4`;
+      
+      // เพิ่มเอฟเฟกต์การแสดงผลแบบสมูท
+      setTimeout(() => {
+        // แสดงค่าแบบมีเอฟเฟกต์
+        animateValue('hi-value', 0, parseFloat(hiValue), 1000, '%');
+        animateValue('ci-value', 0, parseFloat(ciValue), 1000, '%');
+        animateValue('bi-value', 0, parseFloat(biValue), 1000, '%');
+        
+        // แสดงข้อความระดับความเสี่ยงแบบมีเอฟเฟกต์
+        fadeInText('hi-risk', hiRiskInfo.text);
+        fadeInText('ci-risk', ciRiskInfo.text);
+        fadeInText('bi-risk', biRiskInfo.text);
+        
+        // อัปเดตไอคอนตามระดับความเสี่ยง
+        document.getElementById('hi-icon').innerHTML = hiRiskInfo.icon;
+        document.getElementById('ci-icon').innerHTML = ciRiskInfo.icon;
+        document.getElementById('bi-icon').innerHTML = biRiskInfo.icon;
+        
+        // เพิ่มคลาสสีตามระดับความเสี่ยงพร้อมเอฟเฟกต์
+        setTimeout(() => {
+          hiResult.classList.add(hiRiskInfo.class, 'result-appear');
+          ciResult.classList.add(ciRiskInfo.class, 'result-appear');
+          biResult.classList.add(biRiskInfo.class, 'result-appear');
+        }, 100);
+      }, 100);
+      showToast('คำนวณดัชนีสำเร็จ!', 'success');
+    }
+    
+    // ฟังก์ชันสำหรับแสดงค่าแบบมีเอฟเฟกต์นับเลข
+    function animateValue(elementId, start, end, duration, suffix = '') {
+      const element = document.getElementById(elementId);
+      let startTimestamp = null;
+      
+      // กำหนดสีตามค่า (สำหรับ HI และ CI)
+      let colorClass = '';
+      if (elementId === 'hi-value' || elementId === 'ci-value') {
+        if (end < 5) {
+          colorClass = 'text-green-600';
+        } else if (end <= 10) {
+          colorClass = 'text-yellow-600';
+        } else {
+          colorClass = 'text-red-600';
+        }
+      } else if (elementId === 'bi-value') { // สำหรับ BI
+        if (end < 5) {
+          colorClass = 'text-green-600';
+        } else if (end <= 50) {
+          colorClass = 'text-yellow-600';
+        } else {
+          colorClass = 'text-red-600';
+        }
+      }
+      
+      // เพิ่มคลาสสี
+      element.className = `text-lg font-bold ${colorClass} transition-all duration-500`;
+      
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const value = progress * (end - start) + start;
+        element.textContent = `${value.toFixed(2)}${suffix}`;
+        
+        // เพิ่มเอฟเฟกต์ขยายเมื่อใกล้จบ
+        if (progress > 0.8 && progress < 0.9) {
+          element.style.transform = 'scale(1.1)';
+        } else if (progress >= 0.9) {
+          element.style.transform = 'scale(1)';
+        }
+        
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+    
+    // ฟังก์ชันสำหรับแสดงข้อความแบบมีเอฟเฟกต์
+    function fadeInText(elementId, text) {
+      const element = document.getElementById(elementId);
+      element.style.opacity = '0';
+      element.textContent = text;
+      
+      // กำหนดสีตามข้อความ
+      let colorClass = '';
+      if (text === 'ระดับปลอดภัย') {
+        colorClass = 'text-green-600 font-medium';
+      } else if (text === 'ระดับเสี่ยง') {
+        colorClass = 'text-yellow-600 font-medium';
+      } else if (text === 'ระดับอันตราย') {
+        colorClass = 'text-red-600 font-medium';
+      }
+      
+      // เพิ่มคลาสสีและเอฟเฟกต์
+      element.className = `text-sm ${colorClass} transition-all duration-500`;
+      
+      // แสดงข้อความพร้อมเอฟเฟกต์
+      setTimeout(() => {
+        element.style.opacity = '1';
+        element.style.transform = 'translateY(0)';
+      }, 200);
+      
+      // เพิ่มเอฟเฟกต์เน้นข้อความ
+      setTimeout(() => {
+        element.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+          element.style.transform = 'scale(1)';
+        }, 200);
+      }, 700);
+    }
+
+    // ฟังก์ชันสำหรับแสดง Toast Notification
+    function showToast(message, type = 'info') {
+      const toastContainer = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      // Professional theme-consistent styling
+      const toastClasses = {
+        success: 'bg-green-50 text-green-800 border-green-200',
+        error: 'bg-red-50 text-red-800 border-red-200',
+        warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+        info: 'bg-green-100 text-green-800 border-green-300'
+      };
+      
+      const iconClasses = {
+        success: 'bg-green-100 text-green-600 border border-green-300',
+        error: 'bg-red-100 text-red-600 border border-red-300',
+        warning: 'bg-yellow-100 text-yellow-600 border border-yellow-300',
+        info: 'bg-green-200 text-green-700 border border-green-400'
+      };
+      
+      const buttonClasses = {
+        success: 'text-green-600 hover:text-green-800 hover:bg-green-200 focus:ring-green-300',
+        error: 'text-red-600 hover:text-red-800 hover:bg-red-200 focus:ring-red-300',
+        warning: 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-200 focus:ring-yellow-300',
+        info: 'text-green-700 hover:text-green-900 hover:bg-green-300 focus:ring-green-400'
+      };
+      
+      toast.className = `flex items-center w-full max-w-xs p-4 rounded-xl shadow-lg transform translate-x-full transition-all duration-500 ease-out border-2 ${toastClasses[type] || toastClasses.info}`;
+      
+      toast.innerHTML = `
+        <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg ${iconClasses[type] || iconClasses.info}">
+          ${
+            type === 'success' ? 
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+            type === 'error' ? 
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>' :
+            type === 'warning' ? 
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>' :
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+          }
+        </div>
+        <div class="ml-3 text-sm font-medium">${message}</div>
+        <button type="button" class="ml-auto -mx-1.5 -my-1.5 ${buttonClasses[type] || buttonClasses.info} rounded-lg focus:ring-2 focus:ring-offset-2 p-1.5 inline-flex h-8 w-8 transition-all duration-300" data-dismiss-target="#toast-success" aria-label="Close">
+          <span class="sr-only">Close</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      `;
+      toastContainer.appendChild(toast);
+
+      // Trigger the slide-in animation
+      setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+      }, 100);
+
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        toast.addEventListener('transitionend', () => toast.remove());
+      }, 5000);
+
+      // Dismiss on close button click
+      toast.querySelector('button').addEventListener('click', () => {
+        toast.classList.add('opacity-0');
+        toast.addEventListener('transitionend', () => toast.remove());
+      });
+    }
+
+    // ฟังก์ชันรีเซ็ตข้อมูล
+    function resetForm() {
+      // เคลียร์ค่าในฟอร์ม
+      document.getElementById('house_with_larvae').value = '';
+      document.getElementById('total_houses_surveyed').value = '';
+      document.getElementById('containers_with_larvae').value = '';
+      document.getElementById('total_containers_surveyed').value = '';
+      
+      // ลบคลาส validation
+      document.getElementById('house_with_larvae').classList.remove('border-red-500');
+      document.getElementById('total_houses_surveyed').classList.remove('border-red-500');
+      document.getElementById('containers_with_larvae').classList.remove('border-red-500');
+      document.getElementById('total_containers_surveyed').classList.remove('border-red-500');
+      
+      // เพิ่มเอฟเฟกต์การซ่อนผลลัพธ์
+      const resultsContainer = document.getElementById('results-container');
+      const noResultsMessage = document.getElementById('no-results-message');
+      
+      // ทำให้ผลลัพธ์ค่อยๆ จางหายไป
+      if (!resultsContainer.classList.contains('hidden')) {
+        const hiResult = document.getElementById('hi-result');
+        const ciResult = document.getElementById('ci-result');
+        const biResult = document.getElementById('bi-result');
+        
+        // ทำให้ผลลัพธ์จางหายไป
+        hiResult.style.opacity = '0';
+        ciResult.style.opacity = '0';
+        biResult.style.opacity = '0';
+        
+        // รอให้เอฟเฟกต์จางหายเสร็จแล้วจึงซ่อน
+        setTimeout(() => {
+          resultsContainer.classList.add('hidden');
+          noResultsMessage.classList.remove('hidden');
+          
+          // เพิ่มเอฟเฟกต์การแสดงข้อความเริ่มต้น
+          noResultsMessage.classList.add('result-appear');
+          
+          // คืนค่า opacity เพื่อเตรียมพร้อมสำหรับการแสดงผลครั้งต่อไป
+          setTimeout(() => {
+            hiResult.style.opacity = '1';
+            ciResult.style.opacity = '1';
+            biResult.style.opacity = '1';
+            
+            // ลบคลาส animation เพื่อเตรียมพร้อมสำหรับการแสดงผลครั้งต่อไป
+            setTimeout(() => {
+              noResultsMessage.classList.remove('result-appear');
+            }, 1000);
+          }, 300);
+        }, 300);
+      } else {
+        // กรณีที่ไม่มีผลลัพธ์แสดงอยู่
+        noResultsMessage.classList.remove('hidden');
+        noResultsMessage.classList.add('result-appear');
+        
+        // ลบคลาส animation หลังจากเอฟเฟกต์เสร็จสิ้น
+        showToast('ล้างข้อมูลสำเร็จ!', 'info');
+        setTimeout(() => {
+          noResultsMessage.classList.remove('result-appear');
+        }, 1000);
+      }
+    }
+
+    // ผูกเหตุการณ์
+    document.getElementById('calculateButton').addEventListener('click', calculateIndices);
+    document.getElementById('resetButton').addEventListener('click', resetForm);
+  </script>
+</body>
+</html>
